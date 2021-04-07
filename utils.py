@@ -43,12 +43,12 @@ class Model:
         label, label_data = self._convert_to_segments_format(image, outputs)
 
         return label, label_data
-    
+
 
 def train_model(dataset):
     # Export the dataset to COCO format
     export_file, image_dir = export_dataset(dataset, export_format='coco-instance')
-    
+
     # Register it as a COCO dataset in the Detectron2 framework
     try:
         register_coco_instances('my_dataset', {}, export_file, image_dir)
@@ -58,7 +58,7 @@ def train_model(dataset):
     MetadataCatalog.get('my_dataset').set(thing_classes=[c['name'] for c in dataset.categories])
     segments_metadata = MetadataCatalog.get('my_dataset')
     print(segments_metadata)
-    
+
     # Configure the training run
     cfg = get_cfg()
     cfg.merge_from_file(model_zoo.get_config_file('COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml'))
@@ -69,17 +69,17 @@ def train_model(dataset):
     cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url('COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml')  # Let training initialize from model zoo
     cfg.SOLVER.IMS_PER_BATCH = 2 # 4
     cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
-    cfg.SOLVER.MAX_ITER = 300    # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
+    cfg.SOLVER.MAX_ITER = 400    # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
     cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128   # faster, and good enough for this toy dataset (default: 512)
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = len(dataset.categories)  # number of categories
 #     cfg.MODEL.DEVICE = 'cuda'
 
     # Start the training
     os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
-    trainer = DefaultTrainer(cfg) 
+    trainer = DefaultTrainer(cfg)
     trainer.resume_or_load(resume=False)
     trainer.train()
-    
+
     # Return the model
     cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, 'model_final.pth')
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7   # set the testing threshold for this model
@@ -89,8 +89,8 @@ def train_model(dataset):
     model = Model(predictor)
 
     return model
-    
-    
+
+
 def get_image_urls(topic):
     with open('{}.json'.format(topic)) as json_file:
         image_urls = json.load(json_file)
